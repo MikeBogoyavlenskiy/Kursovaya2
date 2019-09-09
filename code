@@ -1,0 +1,381 @@
+Main.cpp
+#include <Windows.h>
+#include "MythicalCreature.h"
+
+#define N 500 // Максимумальная длина названия файла
+
+using namespace std;
+
+string EntryKeybourd(string str2) {
+	char str[N] = "";
+	cout << str2;
+	cin >> str;
+	return str;
+}
+
+int main()
+{
+	int i = 0;
+	ifstream ReadFile;
+	ofstream SaveFile;
+	string Temp;
+
+	while (1) {
+		system("cls");
+		cout << "1 - Read Mythical Creatures \n2 - Save Mythical Creatures \n3 - Re-create Mythical Creatures \n4 - Add new part Mythical Creatures \n5 - Show Mythical Creatures \n0 - Exit\n";
+		cin >> i;
+
+		switch (i) {
+		case 0:
+			return 0;
+		case 1:
+
+			if (MythicalCreature::ReadFile(EntryKeybourd("Entry name file: ")))
+				cout << "Read successfully\n";
+			else cout << "Eror file\n";
+			break;
+		case 2:
+			if (MythicalCreature::SaveFile(EntryKeybourd("Entry name file: ")))
+				cout << "Saved successfully\n";
+			else cout << "Eror file or missing a creature\n";
+			break;
+		case 3:
+			MythicalCreature::Instance()->ReCreate();
+			break;
+		case 4:
+			MythicalCreature::Instance()->AddNewPart();
+			break;
+		case 5:
+			MythicalCreature::Instance()->Show();
+			cin.get();
+			break;
+		}
+
+		Sleep(1000);
+		i = 0;
+	}
+
+	MythicalCreature::DeleteInstance();
+    return 1;
+}
+
+MythicalCreature.h
+
+#ifndef MythicalCreature_H
+#define MythicalCreature_H
+
+#include "PartMythicalCreature.h"
+
+
+class MythicalCreature
+{
+private:
+	int Max; // Размер массива
+	PartMythicalCreature* Mas; // Массив частей существа
+
+	//Существо
+	std::string Name;
+protected:
+	static MythicalCreature* Self; // Указатель на данное существо, существо с которым работаем
+	MythicalCreature();
+	~MythicalCreature();
+	MythicalCreature(const MythicalCreature& root) = delete;
+	MythicalCreature& operator=(const MythicalCreature&) = delete;
+
+public:
+	static MythicalCreature* Instance();
+	static bool DeleteInstance();
+
+	// Работа с существом
+	void ReCreate(); // Пересоздает существо(удаляет старое и создает новое пустое)
+	void AddNewPart(); // Добавляет существу новую часть тела или особенность
+	void Show(); // Показать наше существо
+	void EntryName(); // Ввод имени существа
+
+	// работа с файлом
+	static bool ReadFile(std::string NameFile); // Читает из заданного файла
+	static bool SaveFile(std::string NameFile); // Сохраняет в заданный файл
+};
+
+#endif // MythicalCreature_H
+
+PartMythicalCreature.h
+
+#ifndef PartMythicalCreature_H
+#define PartMythicalCreature_H
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+#define NameLength 100 // Максимальная длина имен
+#define TextLength 200 // максимальная длинна текстов
+
+using namespace std;
+
+class PartMythicalCreature
+{
+public:
+	string Name; // название части тела
+	string Colour; // Цвет
+	string Properties; // Cвойства
+	string Mythology; // Мифология
+	string Description; // Краткое описание
+	string Attack; // Как атакует
+	float Size; // Размер
+
+	void SetPart();
+	void SetPart(string name, string colour, string properties, string mythology, string description, float size);
+	void Show();
+
+	bool ReadFile(std::ifstream &file); // Читает из заданного файла
+	bool SaveFile(std::ofstream &file); // Сохраняет в заданный файл
+
+	PartMythicalCreature();
+	~PartMythicalCreature();
+};
+
+#endif // PartMythicalCreature_H
+
+
+MythicalCreature.cpp
+
+#include "MythicalCreature.h"
+
+using namespace std;
+
+MythicalCreature* MythicalCreature::Self = 0;
+
+template<typename T>
+T* renew(T type, T *mas, int Size, int SizeNew) {
+	if ((Size < 0) || (SizeNew < 0)) { return NULL; }
+	if (Size == SizeNew) return mas;
+	if (SizeNew == 0) {
+		delete[] mas;
+		mas = NULL;
+
+		return mas;
+	}
+
+	int max = (Size < SizeNew) ? Size : SizeNew;
+	T *Temp = new T[max];
+	for (int i = 0; i < max; ++i)
+		Temp[i] = mas[i];
+	if (mas != NULL && Size > 0)
+		delete[] mas;
+
+	mas = new T[SizeNew];
+	for (int i = 0; i < max; ++i)
+		mas[i] = Temp[i];
+
+	return mas;
+}
+
+MythicalCreature* MythicalCreature::Instance() {
+	if (!Self) { 
+		Self = new MythicalCreature();
+		Self->EntryName();
+	}
+	return Self;
+}
+
+bool MythicalCreature::DeleteInstance() {
+	if (Self) {
+		delete Self;
+		Self = NULL;
+		return true;
+	}
+	return false;
+}
+
+MythicalCreature::MythicalCreature() {
+	Mas = NULL;
+	Max = 0;
+}
+
+MythicalCreature::~MythicalCreature() {
+	delete[] Mas;
+	//delete Mas;
+}
+
+void MythicalCreature::EntryName() {
+	cout << "\nEnter Name(not more than " << NameLength << " characters): ";
+	char *temp = new char[NameLength];
+	cin >> temp;
+	Name = temp;
+	
+	delete[] temp;
+	return;
+}
+
+void MythicalCreature::ReCreate() {
+	DeleteInstance();
+	Instance();
+}
+
+void MythicalCreature::Show() {
+	cout << endl << "Name Mythical Creature: " << Name.c_str() << endl;
+	for (int i = 0; i < Max; ++i)
+		Mas[i].Show();
+	if (Max == 0)
+		cout << "Parts of the body not specified.\n";
+
+	return;
+}
+
+void MythicalCreature::AddNewPart() {
+	PartMythicalCreature Temp;
+	Mas = renew(Temp, Mas, Max, Max+1);
+	Mas[Max].SetPart();
+
+	++Max;
+	return;
+}
+
+bool MythicalCreature::ReadFile(std::string NameFile) {
+	ifstream file(NameFile);
+
+	if (!file.is_open()) return false;
+	else {
+		DeleteInstance();
+		if (!Self) { Self = new MythicalCreature(); }
+	}
+
+	string temp;
+
+	getline(file, Self->Name);
+	getline(file, temp);
+	Self->Max = atoi(temp.c_str());
+
+	Self->Mas = new PartMythicalCreature[Self->Max];
+	for (int i = 0; i < Self->Max; ++i)
+		Self->Mas[i].ReadFile(file);
+	
+	file.close();
+	return true; 
+}
+
+bool MythicalCreature::SaveFile(std::string NameFile) {
+	ofstream file(NameFile);
+
+	if (!file.is_open() || !Self)
+		return false;
+
+	file << Self->Name << "\n";
+	file << Self->Max << "\n";
+
+	for (int i = 0; i < Self->Max; ++i)
+		Self->Mas[i].SaveFile(file);
+
+	file.close();
+	return true; 
+}
+
+PartMythicalCreature.cpp
+
+#include "PartMythicalCreature.h"
+
+using namespace std;
+
+
+
+PartMythicalCreature::PartMythicalCreature(){
+	Size = 0;
+}
+
+
+PartMythicalCreature::~PartMythicalCreature(){
+
+}
+
+void PartMythicalCreature::Show() {
+	cout << "\nName part: " << Name.c_str() << endl;
+	cout << "Colour: " << Colour.c_str() << endl;
+	cout << "Properties: " << Properties.c_str() << endl;
+	cout << "Mythology: " << Mythology.c_str() << endl;
+	cout << "Description: " << Description.c_str() << endl;
+	cout << "Attack: " << Attack.c_str() << endl;
+
+	cout << "Size: " << Size << endl;
+
+	return;
+}
+
+void PartMythicalCreature::SetPart() {
+	char *Temp = new char[NameLength];
+	cout << endl << "Entry";
+	cout << "Name part: ";
+	cin >> Temp;
+	Name = Temp;
+	delete[] Temp;
+	Temp = new char[TextLength];
+	cout << "Colour: ";
+	cin >> Temp;
+	Colour = Temp;
+	cout << "Properties: ";
+	cin >> Temp;
+	Properties = Temp;
+	cout << "Mythology: ";
+	cin >> Temp;
+	Mythology = Temp;
+	cout << "Description: ";
+	cin >> Temp;
+	Description = Temp;
+	cout << "Attack: ";
+	cin >> Temp;
+	Attack = Temp;
+
+	cout << "Size: ";
+	cin >> Size;
+
+	delete[] Temp;
+	return;
+}
+
+void PartMythicalCreature::SetPart(string name, string colour, string properties, string mythology, string description, float size) {
+	Name = name;
+	Colour = colour;
+	Properties = properties;
+	Mythology = mythology;
+	Description = description;
+	Size = size;
+
+	return;
+}
+
+bool PartMythicalCreature::ReadFile(ifstream &file) {
+	if (!file.is_open())
+		return false;
+
+	string temp;
+
+	getline(file, Name);
+	getline(file, Colour);
+	getline(file, Properties);
+	getline(file, Mythology);
+	getline(file, Description);
+	getline(file, Attack);
+
+	getline(file, temp);
+	Size = atoi(temp.c_str());
+
+	return true;
+}
+
+
+
+
+bool PartMythicalCreature::SaveFile(ofstream &file) {
+	if (!file.is_open())
+		return false;
+
+	file << Name << "\n";
+	file << Colour << "\n";
+	file << Properties << "\n";
+	file << Mythology << "\n";
+	file << Description << "\n";
+	file << Attack << "\n";
+	file << Size << "\n";
+
+	return true;
+}
