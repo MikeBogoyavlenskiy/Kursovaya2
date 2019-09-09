@@ -1,1 +1,1 @@
-# Kursovaya2
+# Kursovaya Mythycal Creatures
